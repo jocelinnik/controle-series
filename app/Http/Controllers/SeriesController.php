@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 
 use App\Serie;
 use App\Http\Requests\SeriesFormRequest;
+use App\Services\CriadorDeSerie;
+use App\Services\RemovedorDeSerie;
 
 class SeriesController extends Controller
 {
@@ -24,28 +26,36 @@ class SeriesController extends Controller
         return view("series.create");
     }
 
-    public function store(SeriesFormRequest $request)
+    public function store(SeriesFormRequest $request, CriadorDeSerie $criadorDeSerie)
     {
-        $serie = Serie::create($request->all());
+        $serie = $criadorDeSerie->criarSerie($request->nome, $request->qtd_temporadas, $request->ep_por_temporada);
+
         $request->session()
             ->flash(
                 "mensagem",
-                "Série {$serie->id} criada com sucesso: {$serie->nome}"
+                "Série {$serie->id} e suas temporadas e episódios criados com sucesso: {$serie->nome}"
             );
 
         return redirect()->route("listar_series");
     }
 
-    public function destroy(Request $request)
+    public function destroy(Request $request, RemovedorDeSerie $removedorDeSerie)
     {
-        Serie::destroy($request->id);
-
+        $nomeSerie = $removedorDeSerie->removerSerie($request->id);
         $request->session()
             ->flash(
                 "mensagem",
-                "Série removida com sucesso"
+                "Série $nomeSerie removida com sucesso"
             );
 
         return redirect()->route("listar_series");
+    }
+
+    public function editaNome(int $id, Request $request)
+    {
+        $novoNome = $request->nome;
+        $serie = Serie::find($id);
+        $serie->nome = $novoNome;
+        $serie->save();
     }
 }
